@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beam Displacement Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Beam Displacement by Plane Parallel Plate</h1>
+
+    <section class="calculator-container">
+        <div class="inputs">
+            <div class="input-group">
+                <label for="tilt_angle">Plate Tilt Angle (&theta;<sub>1</sub>, degrees):</label>
+                <div class="input-widget">
+                    <input type="number" id="tilt_angle" value="45" step="1">
+                    <button type="button" class="adjust-btn minus-btn" data-target="tilt_angle" data-step="1">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="tilt_angle" data-step="1">+</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="ref_index">Plate Refractive Index (n):</label>
+                <div class="input-widget">
+                    <input type="number" id="ref_index" value="1.517" step="0.1" min="1">
+                    <button type="button" class="adjust-btn minus-btn" data-target="ref_index" data-step="0.1">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="ref_index" data-step="0.1">+</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="thic">Plate Thickness (t, mm):</label>
+                 <div class="input-widget">
+                    <input type="number" id="thic" value="3" step="1" min="0">
+                    <button type="button" class="adjust-btn minus-btn" data-target="thic" data-step="1">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="thic" data-step="1">+</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="wvl">Beam color wavelength (&lambda;, nm) <br> (no impact on calculation)</label>
+                <div class="input-widget">
+                    <input type="number" id="wvl" value="660" step="10" min="1">
+                    <button type="button" class="adjust-btn minus-btn" data-target="wvl" data-step="10">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="wvl" data-step="10">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="outputs">
+            <p class="output-value-line">
+                Lateral Beam Displacement:
+                <span id="outputResult">--</span> mm
+            </p>
+            <canvas id="opticalCanvas" width="600" height="400">
+                Your browser does not support the HTML canvas element.
+            </canvas>
+        </div>
+    </section>
+
+    <script src="script.js"></script>
+</body>
+</html>
