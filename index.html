@@ -8,7 +8,16 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-</head>
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-18SYL8XCH1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'G-18SYL8XCH1');
+    </script>
+    </head>
 <body>
 
     <h1>Beam Displacement by Plane Parallel Plate</h1>
@@ -40,7 +49,7 @@
                 </div>
             </div>
             <div class="input-group">
-                <label for="wvl">Beam color wavelength (&lambda;, nm) <br> (no impact on calculation)</label>
+                <label for="wvl">Beam color wavelength (&lambda;, nm) (no impact on calculation)</label>
                 <div class="input-widget">
                     <input type="number" id="wvl" value="660" step="10" min="1">
                     <button type="button" class="adjust-btn minus-btn" data-target="wvl" data-step="10">-</button>
