@@ -199,4 +199,240 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Initial Calculation on Load ---
     calculateBeamOffset();
+
+    // --- Focus Shift Calculation and Visualization ---
+    const focusRefIndexInput = document.getElementById('focus_ref_index');
+    const focusThicknessInput = document.getElementById('focus_thickness');
+    const focusShiftResultSpan = document.getElementById('focusShiftResult');
+    const focusCanvas = document.getElementById('focusCanvas');
+    const focusCtx = focusCanvas.getContext('2d');
+
+    function calculateFocusShift() {
+        const n = parseFloat(focusRefIndexInput.value);
+        const t = parseFloat(focusThicknessInput.value);
+
+        let isValid = true;
+        let errorMsg = "--";
+
+        if (isNaN(n) || isNaN(t)) {
+            errorMsg = "Invalid Input"; isValid = false;
+        } else if (n < 1) {
+            errorMsg = "n must be >= 1"; isValid = false;
+        } else if (t < 0) {
+            errorMsg = "Thickness must be >= 0"; isValid = false;
+        }
+
+        if (!isValid) {
+            focusShiftResultSpan.textContent = errorMsg;
+            clearFocusCanvas();
+            return;
+        }
+
+        // Calculate focus shift
+        const focusShift = t * (1 - 1/n);
+        focusShiftResultSpan.textContent = focusShift.toFixed(3);
+        drawFocusVisualization(n, t, focusShift);
+    }
+
+    function drawFocusVisualization(n, t, focusShift) {
+        clearFocusCanvas();
+
+        const canvasWidth = focusCanvas.width;
+        const canvasHeight = focusCanvas.height;
+        const windowColor = 'rgba(173, 216, 230, 0.6)';
+        const windowBorderColor = '#00008B';
+        const rayColor = '#FF0000';
+        const virtualRayColor = 'rgba(255, 0, 0, 0.5)';
+        const scaleFactor = 10;
+
+        // Draw glass window
+        const windowThicknessPx = t * scaleFactor;
+        const windowCenterX = canvasWidth * 0.5;
+        const windowTopY = canvasHeight * 0.2;
+        const windowBottomY = windowTopY + canvasHeight * 0.6;
+
+        // Draw window
+        focusCtx.fillStyle = windowColor;
+        focusCtx.strokeStyle = windowBorderColor;
+        focusCtx.lineWidth = 1;
+        focusCtx.fillRect(windowCenterX, windowTopY, windowThicknessPx, windowBottomY - windowTopY);
+        focusCtx.strokeRect(windowCenterX, windowTopY, windowThicknessPx, windowBottomY - windowTopY);
+
+        // Calculate focus positions
+        const opticalAxisY = canvasHeight * 0.5;
+        const virtualFocusX = canvasWidth * 0.8;
+        // Calculate theoretical real focus position (we'll adjust this later)
+        const theoreticalRealFocusX = virtualFocusX - (focusShift * scaleFactor); 
+
+        // Draw optical axis
+        focusCtx.strokeStyle = '#888';
+        focusCtx.setLineDash([2, 2]);
+        focusCtx.beginPath();
+        focusCtx.moveTo(0, opticalAxisY);
+        focusCtx.lineTo(canvasWidth, opticalAxisY);
+        focusCtx.stroke();
+        focusCtx.setLineDash([]);
+
+        // Calculate ray starting points
+        const rayStartX = 50;
+        const raySpacing = 80;
+        const rayY1 = opticalAxisY - raySpacing;
+        const rayY2 = opticalAxisY;
+        const rayY3 = opticalAxisY + raySpacing;
+        
+        // Store ray exit points and angles to calculate intersection
+        const rayExitPoints = [];
+        const rayExitAngles = [];
+
+        // Function to draw a ray with refraction
+        function drawRay(startX, startY, isVirtual = false) {
+            // Calculate angle to aim at virtual focus
+            const angle = Math.atan2(opticalAxisY - startY, virtualFocusX - startX);
+            
+            // Calculate intersection with first glass surface
+            const glassEntryX = windowCenterX;
+            const glassEntryY = startY + (glassEntryX - startX) * Math.tan(angle);
+            
+            // Draw first segment (incident ray)
+            focusCtx.beginPath();
+            focusCtx.moveTo(startX, startY);
+            focusCtx.lineTo(glassEntryX, glassEntryY);
+            focusCtx.stroke();
+            
+            if (isVirtual) {
+                // Draw virtual ray continuing straight to virtual focus
+                focusCtx.beginPath();
+                focusCtx.moveTo(glassEntryX, glassEntryY);
+                focusCtx.lineTo(virtualFocusX, opticalAxisY);
+                focusCtx.stroke();
+                return;
+            }
+            
+            // Calculate refraction at first interface (air to glass)
+            // Snell's law: n1*sin(theta1) = n2*sin(theta2)
+            const incidentAngle = Math.abs(angle);
+            const n1 = 1.0; // Air
+            const n2 = n;   // Glass
+            
+            // Calculate refracted angle using Snell's law
+            const sinTheta2 = (n1 / n2) * Math.sin(incidentAngle);
+            const refractedAngle = Math.asin(Math.min(1.0, sinTheta2));
+            
+            // Preserve direction (sign) of the original angle
+            const signedRefractedAngle = angle >= 0 ? refractedAngle : -refractedAngle;
+            
+            // Calculate exit point from glass
+            const glassExitX = windowCenterX + windowThicknessPx;
+            const glassExitY = glassEntryY + windowThicknessPx * Math.tan(signedRefractedAngle);
+            
+            // Draw ray through glass
+            focusCtx.beginPath();
+            focusCtx.moveTo(glassEntryX, glassEntryY);
+            focusCtx.lineTo(glassExitX, glassExitY);
+            focusCtx.stroke();
+            
+            // Calculate refraction at second interface (glass to air)
+            const exitIncidentAngle = Math.abs(signedRefractedAngle);
+            const sinExitAngle = (n2 / n1) * Math.sin(exitIncidentAngle);
+            const exitAngle = Math.asin(Math.min(1.0, sinExitAngle));
+            
+            // Preserve direction of the angle
+            const signedExitAngle = signedRefractedAngle >= 0 ? exitAngle : -exitAngle;
+            
+            // Store ray exit point and angle for intersection calculation
+            rayExitPoints.push({x: glassExitX, y: glassExitY});
+            rayExitAngles.push(signedExitAngle);
+            
+            // Draw final ray segment to where it naturally goes
+            // We'll extend the ray far enough to reach past the real focus
+            const rayExtendLength = canvasWidth;
+            const finalX = glassExitX + rayExtendLength;
+            const finalY = glassExitY + rayExtendLength * Math.tan(signedExitAngle);
+            
+            focusCtx.beginPath();
+            focusCtx.moveTo(glassExitX, glassExitY);
+            focusCtx.lineTo(finalX, finalY);
+            focusCtx.stroke();
+        }
+
+        // Draw solid rays
+        focusCtx.strokeStyle = rayColor;
+        focusCtx.lineWidth = 2;
+        drawRay(rayStartX, rayY1);
+        drawRay(rayStartX, rayY2);
+        drawRay(rayStartX, rayY3);
+        
+        // Calculate the real focus position by finding ray intersections
+        const realFocusX = calculateRayIntersection(rayExitPoints, rayExitAngles);
+        
+        // Use theoretical value as fallback if intersection calculation failed
+        const finalRealFocusX = isNaN(realFocusX) ? theoreticalRealFocusX : realFocusX;
+
+        // Draw virtual rays (dashed)
+        focusCtx.strokeStyle = virtualRayColor;
+        focusCtx.setLineDash([5, 3]);
+        focusCtx.lineWidth = 1;
+        drawRay(rayStartX, rayY1, true);
+        drawRay(rayStartX, rayY2, true);
+        drawRay(rayStartX, rayY3, true);
+        focusCtx.setLineDash([]);
+
+        // Draw focus points
+        const focusPointSize = 5;
+
+        // Virtual focus
+        focusCtx.fillStyle = virtualRayColor;
+        focusCtx.beginPath();
+        focusCtx.arc(virtualFocusX, opticalAxisY, focusPointSize, 0, 2 * Math.PI);
+        focusCtx.fill();
+
+        // Real focus
+        focusCtx.fillStyle = rayColor;
+        focusCtx.beginPath();
+        focusCtx.arc(finalRealFocusX, opticalAxisY, focusPointSize, 0, 2 * Math.PI);
+        focusCtx.fill();
+
+        // Add labels
+        focusCtx.fillStyle = '#000';
+        focusCtx.font = '12px Roboto';
+        focusCtx.textAlign = 'center';
+        focusCtx.fillText('Virtual Focus', virtualFocusX, opticalAxisY - 15);
+        focusCtx.fillText('Real Focus', finalRealFocusX, opticalAxisY + 20);
+    }
+    
+    // Function to calculate intersection of rays
+    function calculateRayIntersection(exitPoints, exitAngles) {
+        if (exitPoints.length < 2) return NaN;
+        
+        // Use the top and bottom rays for intersection calculation
+        const p1 = exitPoints[0];  // First ray exit point
+        const m1 = Math.tan(exitAngles[0]);  // First ray slope
+        const p2 = exitPoints[2];  // Third ray exit point
+        const m2 = Math.tan(exitAngles[2]);  // Third ray slope
+        
+        // Check if slopes are too similar (parallel rays)
+        if (Math.abs(m1 - m2) < 1e-6) return NaN;
+        
+        // Calculate intersection using the line equations y = mx + b
+        // Where b = y - mx
+        const b1 = p1.y - m1 * p1.x;
+        const b2 = p2.y - m2 * p2.x;
+        
+        // Intersection occurs when m1*x + b1 = m2*x + b2
+        // So x = (b2 - b1) / (m1 - m2)
+        const intersectX = (b2 - b1) / (m1 - m2);
+        
+        return intersectX;
+    }
+
+    function clearFocusCanvas() {
+        focusCtx.clearRect(0, 0, focusCanvas.width, focusCanvas.height);
+    }
+
+    // Add event listeners for focus shift calculator
+    focusRefIndexInput.addEventListener('input', calculateFocusShift);
+    focusThicknessInput.addEventListener('input', calculateFocusShift);
+
+    // Initial calculation for focus shift
+    calculateFocusShift();
 });

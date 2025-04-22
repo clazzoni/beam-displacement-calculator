@@ -69,6 +69,39 @@
         </div>
     </section>
 
+    <h1>Focus Shift by Plane Parallel Plate</h1>
+
+    <section class="calculator-container">
+        <div class="inputs">
+            <div class="input-group">
+                <label for="focus_ref_index">Glass Refractive Index (n):</label>
+                <div class="input-widget">
+                    <input type="number" id="focus_ref_index" value="1.517" step="0.1" min="1">
+                    <button type="button" class="adjust-btn minus-btn" data-target="focus_ref_index" data-step="0.1">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="focus_ref_index" data-step="0.1">+</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="focus_thickness">Glass Thickness (t, mm):</label>
+                <div class="input-widget">
+                    <input type="number" id="focus_thickness" value="3" step="1" min="0">
+                    <button type="button" class="adjust-btn minus-btn" data-target="focus_thickness" data-step="1">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="focus_thickness" data-step="1">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="outputs">
+            <p class="output-value-line">
+                Focus Shift:
+                <span id="focusShiftResult">--</span> mm
+            </p>
+            <canvas id="focusCanvas" width="600" height="400">
+                Your browser does not support the HTML canvas element.
+            </canvas>
+        </div>
+    </section>
+
     <script src="script.js"></script>
 </body>
 </html>

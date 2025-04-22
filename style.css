@@ -115,6 +115,15 @@ input[type=number] {
     margin-left: 5px; /* Add slight space */
 }
 
+/* Matching styling for focus shift result */
+#focusShiftResult {
+    font-weight: bold;
+    font-size: 2.4rem;
+    color: #28a745;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+
 #opticalCanvas {
     border: 1px solid #ccc;
     display: block;
