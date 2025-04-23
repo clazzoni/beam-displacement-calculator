@@ -435,4 +435,198 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial calculation for focus shift
     calculateFocusShift();
+
+    // --- Lens Equation Calculator ---
+    const focalLengthInput = document.getElementById('focal_length');
+    const objectDistanceInput = document.getElementById('object_distance');
+    const imageDistanceResultSpan = document.getElementById('imageDistanceResult');
+    const lensCanvas = document.getElementById('lensCanvas');
+    const lensCtx = lensCanvas.getContext('2d');
+
+    function calculateLensEquation() {
+        const f = parseFloat(focalLengthInput.value);
+        const s = parseFloat(objectDistanceInput.value);
+
+        let isValid = true;
+        let errorMsg = "--";
+
+        if (isNaN(f) || isNaN(s)) {
+            errorMsg = "Invalid Input"; isValid = false;
+        } else if (f <= 0) {
+            errorMsg = "f must be > 0"; isValid = false;
+        } else if (s <= 0) {
+            errorMsg = "s must be > 0"; isValid = false;
+        }
+
+        if (!isValid) {
+            imageDistanceResultSpan.textContent = errorMsg;
+            clearLensCanvas();
+            return;
+        }
+
+        // Calculate image distance using lens equation: 1/f = 1/s + 1/s'
+        const sPrime = 1 / (1/f - 1/s);
+        imageDistanceResultSpan.textContent = sPrime.toFixed(3);
+        drawLensVisualization(f, s, sPrime);
+    }
+
+    function drawLensVisualization(f, s, sPrime) {
+        clearLensCanvas();
+
+        const canvasWidth = lensCanvas.width;
+        const canvasHeight = lensCanvas.height;
+        const scaleFactor = 0.5; // mm to pixels
+
+        // Draw optical axis
+        const opticalAxisY = canvasHeight * 0.5;
+        lensCtx.strokeStyle = '#888';
+        lensCtx.setLineDash([2, 2]);
+        lensCtx.beginPath();
+        lensCtx.moveTo(0, opticalAxisY);
+        lensCtx.lineTo(canvasWidth, opticalAxisY);
+        lensCtx.stroke();
+        lensCtx.setLineDash([]);
+
+        // Draw curved lens
+        const lensX = canvasWidth * 0.5;
+        const lensHeight = 200; // Doubled height
+        const lensCurvature = 20;
+        
+        // Draw lens with gradient
+        const lensGradient = lensCtx.createLinearGradient(lensX - lensCurvature, 0, lensX + lensCurvature, 0);
+        lensGradient.addColorStop(0, 'rgba(173, 216, 230, 0.3)');
+        lensGradient.addColorStop(0.5, 'rgba(173, 216, 230, 0.6)');
+        lensGradient.addColorStop(1, 'rgba(173, 216, 230, 0.3)');
+        
+        lensCtx.fillStyle = lensGradient;
+        lensCtx.strokeStyle = '#00008B';
+        lensCtx.lineWidth = 2;
+        
+        // Draw curved lens shape
+        lensCtx.beginPath();
+        lensCtx.moveTo(lensX - lensCurvature, opticalAxisY - lensHeight/2);
+        lensCtx.quadraticCurveTo(lensX, opticalAxisY - lensHeight/2 - lensCurvature, 
+                                lensX + lensCurvature, opticalAxisY - lensHeight/2);
+        lensCtx.lineTo(lensX + lensCurvature, opticalAxisY + lensHeight/2);
+        lensCtx.quadraticCurveTo(lensX, opticalAxisY + lensHeight/2 + lensCurvature,
+                                lensX - lensCurvature, opticalAxisY + lensHeight/2);
+        lensCtx.closePath();
+        lensCtx.fill();
+        lensCtx.stroke();
+
+        // Calculate positions
+        const objectX = lensX - s * scaleFactor;
+        const imageX = lensX + sPrime * scaleFactor;
+        const objectSize = 30;
+        const imageSize = objectSize * Math.abs(sPrime/s);
+
+        // Function to draw a flower
+        function drawFlower(x, y, size, isUpsideDown = false) {
+            const petalCount = 5;
+            const petalLength = size * 0.8;
+            const petalWidth = size * 0.4;
+            const centerSize = size * 0.3;
+            
+            // Draw petals
+            lensCtx.fillStyle = '#FF69B4';
+            for (let i = 0; i < petalCount; i++) {
+                const angle = (i * 2 * Math.PI / petalCount) + (isUpsideDown ? Math.PI : 0);
+                lensCtx.save();
+                lensCtx.translate(x, y);
+                lensCtx.rotate(angle);
+                lensCtx.beginPath();
+                lensCtx.ellipse(0, -petalLength/2, petalWidth/2, petalLength/2, 0, 0, 2 * Math.PI);
+                lensCtx.fill();
+                lensCtx.restore();
+            }
+            
+            // Draw center
+            lensCtx.fillStyle = '#FFD700';
+            lensCtx.beginPath();
+            lensCtx.arc(x, y, centerSize, 0, 2 * Math.PI);
+            lensCtx.fill();
+        }
+
+        // Draw object (flower)
+        drawFlower(objectX, opticalAxisY, objectSize);
+
+        // Draw image (upside down flower)
+        if (sPrime > 0) {
+            drawFlower(imageX, opticalAxisY, imageSize, true);
+        }
+
+        // Draw rays
+        const rayColor = '#0000FF';
+        const virtualRayColor = 'rgba(0, 0, 255, 0.5)';
+
+        // Function to draw a ray
+        function drawRay(startX, startY, endX, endY, isVirtual = false) {
+            lensCtx.strokeStyle = isVirtual ? virtualRayColor : rayColor;
+            lensCtx.setLineDash(isVirtual ? [5, 3] : []);
+            lensCtx.beginPath();
+            lensCtx.moveTo(startX, startY);
+            lensCtx.lineTo(endX, endY);
+            lensCtx.stroke();
+            lensCtx.setLineDash([]);
+        }
+
+        // Calculate ray angles
+        const rayAngle = Math.atan2(lensHeight/2, s * scaleFactor);
+
+        // Draw three rays
+        // 1. Center ray (on axis)
+        drawRay(objectX, opticalAxisY, lensX, opticalAxisY);
+        drawRay(lensX, opticalAxisY, imageX, opticalAxisY);
+
+        // 2. Upper marginal ray
+        const upperRayY = opticalAxisY - lensHeight/2;
+        drawRay(objectX, opticalAxisY, lensX, upperRayY);
+        drawRay(lensX, upperRayY, imageX, opticalAxisY);
+
+        // 3. Lower marginal ray
+        const lowerRayY = opticalAxisY + lensHeight/2;
+        drawRay(objectX, opticalAxisY, lensX, lowerRayY);
+        drawRay(lensX, lowerRayY, imageX, opticalAxisY);
+
+        // Draw virtual rays if image is virtual (s' < 0)
+        if (sPrime < 0) {
+            // Draw virtual image
+            drawFlower(imageX, opticalAxisY, imageSize, true);
+            
+            // Draw virtual rays
+            drawRay(objectX, opticalAxisY, lensX, opticalAxisY, true);
+            drawRay(lensX, opticalAxisY, imageX, opticalAxisY, true);
+            
+            drawRay(objectX, opticalAxisY, lensX, upperRayY, true);
+            drawRay(lensX, upperRayY, imageX, opticalAxisY, true);
+            
+            drawRay(objectX, opticalAxisY, lensX, lowerRayY, true);
+            drawRay(lensX, lowerRayY, imageX, opticalAxisY, true);
+        }
+
+        // Add labels
+        lensCtx.fillStyle = '#000';
+        lensCtx.font = '12px Roboto';
+        lensCtx.textAlign = 'center';
+        lensCtx.fillText('Object', objectX, opticalAxisY - objectSize - 10);
+        lensCtx.fillText('Image', imageX, opticalAxisY - imageSize - 10);
+        lensCtx.fillText('Lens', lensX, opticalAxisY - lensHeight/2 - 10);
+
+        // Update the image distance display with large green text
+        const imageDistanceResultSpan = document.getElementById('imageDistanceResult');
+        imageDistanceResultSpan.style.fontSize = '2.4rem';
+        imageDistanceResultSpan.style.color = '#28a745';
+        imageDistanceResultSpan.style.fontWeight = 'bold';
+    }
+
+    function clearLensCanvas() {
+        lensCtx.clearRect(0, 0, lensCanvas.width, lensCanvas.height);
+    }
+
+    // Add event listeners for lens equation calculator
+    focalLengthInput.addEventListener('input', calculateLensEquation);
+    objectDistanceInput.addEventListener('input', calculateLensEquation);
+
+    // Initial calculation for lens equation
+    calculateLensEquation();
 });

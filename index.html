@@ -102,6 +102,39 @@
         </div>
     </section>
 
+    <h1>Lens Equation Calculator</h1>
+
+    <section class="calculator-container">
+        <div class="inputs">
+            <div class="input-group">
+                <label for="focal_length">Focal Length (f, mm):</label>
+                <div class="input-widget">
+                    <input type="number" id="focal_length" value="100" step="10">
+                    <button type="button" class="adjust-btn minus-btn" data-target="focal_length" data-step="10">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="focal_length" data-step="10">+</button>
+                </div>
+            </div>
+            <div class="input-group">
+                <label for="object_distance">Object Distance (s, mm):</label>
+                <div class="input-widget">
+                    <input type="number" id="object_distance" value="200" step="10">
+                    <button type="button" class="adjust-btn minus-btn" data-target="object_distance" data-step="10">-</button>
+                    <button type="button" class="adjust-btn plus-btn" data-target="object_distance" data-step="10">+</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="outputs">
+            <p class="output-value-line">
+                Image Distance (s'):
+                <span id="imageDistanceResult">--</span> mm
+            </p>
+            <canvas id="lensCanvas" width="600" height="400">
+                Your browser does not support the HTML canvas element.
+            </canvas>
+        </div>
+    </section>
+
     <script src="script.js"></script>
 </body>
 </html>
